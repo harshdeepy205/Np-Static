@@ -17,47 +17,33 @@ import { Graph } from 'react-d3-graph'
 import findShortestPath from '../utils/shortestPath'
 
 const Home = () => {
-  const restaurants = ["R1", "R2"]
-  const [houses, setHouses] = useState(["H1", "H2", "H3", "H4"])
-  const [deliveryExecutives, updateDeliveryExecutivesData] = useState([
+  const restaurants = ["R1", "R2", "R3"]
+  const houses = ["H1", "H2", "H3", "H4", "H5"]
+  const [deliveryExecutives, updateDeliveryExecutives] = useState([
     {
       name: "D1",
       startPosition: "H1",
-      pickupLocation: undefined,
-      dropLocation: undefined,
     },
     {
       name: "D2",
       startPosition: "H3",
-      pickupLocation: undefined,
-      dropLocation: undefined,
     }
   ])
-  const [finalValues, setFinalValues] = useState({
-    "node1": "",
-    "node2": "",
-    "distance": undefined
-  })
 
   const dataList = [
     {
       node1: "R1",
-      node2: "H1",
-      distance: 2,
-    },
-    {
-      node1: "R1",
-      node2: "H2",
+      node2: "H3",
       distance: 3,
     },
     {
       node1: "R1",
-      node2: "H3",
-      distance: 4,
+      node2: "H5",
+      distance: 7,
     },
     {
       node1: "R2",
-      node2: "H2",
+      node2: "H1",
       distance: 5,
     },
     {
@@ -67,15 +53,41 @@ const Home = () => {
     },
     {
       node1: "R2",
-      node2: "H1",
-      distance: 7,
+      node2: "H4",
+      distance: 10,
     },
     {
-      node1: "R2",
-      node2: "H4",
+      node1: "R3",
+      node2: "H2",
       distance: 8,
     },
+    {
+      node1: "R3",
+      node2: "H3",
+      distance: 6,
+    },
   ]
+
+  const [orderGraphData, setOrderGraphData] = useState({})
+  const [showGraph, toggleGraph] = useState(false)
+  const graphConfig = {
+    freezeAllDragEvents: true,
+    nodeHighlightBehavior: true,
+    node: {
+      color: "lightgreen",
+      highlightStrokeColor: "blue",
+      fontSize: 16,
+    },
+    link: {
+      highlightColor: "lightblue",
+      renderLabel: true,
+      labelProperty: "distance",
+      fontSize: 12,
+    },
+    directed: true,
+    height: 300,
+    width: 300,
+  };
 
   const generateGraphData = () => {
     let graph = {};
@@ -91,65 +103,115 @@ const Home = () => {
     return graph;
   }
 
-  const updatePickupLocationOfDeliveryLocation = deliveryExecutiveIndex => event => {
-    let list = [...deliveryExecutives]
-    list[deliveryExecutiveIndex].pickupLocation = event.target.value
-    updateDeliveryExecutivesData(list)
+  const [orderData, setOrderData] = useState({})
+
+  const updatePickupLocationOfDeliveryLocation = event => {
+    setOrderData({ ...orderData, pickupLocation: event.target.value })
   }
 
-  const updateDropLocationOfDeliveryLocation = deliveryExecutiveIndex => event => {
-    let list = [...deliveryExecutives]
-    list[deliveryExecutiveIndex].dropLocation = event.target.value
-    updateDeliveryExecutivesData(list)
+  const updateDropLocationOfDeliveryLocation = event => {
+    setOrderData({ ...orderData, dropLocation: event.target.value })
   }
 
   const finalForm = () => {
     return (
       <div>
-
+        <div>
+          <div>
+            <h4>Orders</h4>
+            <h5>Live Location</h5>
+            <div>
+              {deliveryExecutives.map(deliveryPerson => (
+                <div key={deliveryPerson.name}>
+                  Delivery Executive {deliveryPerson.name} is at Location {deliveryPerson.startPosition}
+                </div>
+              ))}
+            </div>
+            <div style={{ textAlign: "left" }}>
+              <p>Steps to proceed :-</p>
+              <ol>
+                <li>Select the Pickup Location</li>
+                <li>Select the Drop Location</li>
+              </ol>
+            </div>
+          </div>
+        </div>
         <TableContainer component={Paper} className="table">
           <Table aria-label="simple table">
             <TableHead>
-              {deliveryExecutives.map((deliveryExecutive, deliveryExecutiveIndex) => (
-                <TableRow key={deliveryExecutiveIndex}>
-                  <TableCell>{deliveryExecutive.name} is at {deliveryExecutive.startPosition}</TableCell>
-
-                  <TableCell>
-                    <InputLabel>Select Pickup location</InputLabel>
-                    <Select onChange={updatePickupLocationOfDeliveryLocation(deliveryExecutiveIndex)}>
-                      {restaurants.map(item => <MenuItem key={item} value={item}>{item}</MenuItem>)}
-                    </Select>
-                  </TableCell>
-
-                  <TableCell>
-                    <InputLabel>Select Delivery Location</InputLabel>
-                    <Select onChange={updateDropLocationOfDeliveryLocation(deliveryExecutiveIndex)}>
-                      {houses.map(item => <MenuItem key={item} value={item}>{item}</MenuItem>)}
-                    </Select>
-                  </TableCell>
-                </TableRow>
-              ))}
+              <TableRow>
+                <TableCell>
+                  <InputLabel>Select Pickup location</InputLabel>
+                  <Select onChange={updatePickupLocationOfDeliveryLocation}>
+                    {restaurants.map(item => <MenuItem key={item} value={item}>{item}</MenuItem>)}
+                  </Select>
+                </TableCell>
+                <TableCell>
+                  <InputLabel>Select Delivery Location</InputLabel>
+                  <Select onChange={updateDropLocationOfDeliveryLocation}>
+                    {houses.map(item => <MenuItem key={item} value={item}>{item}</MenuItem>)}
+                  </Select>
+                </TableCell>
+              </TableRow>
             </TableHead>
           </Table>
         </TableContainer>
 
-        <Button variant="contained" color="primary" onClick={submitOrders}>Submit</Button>
+        <Grid container style={{ marginTop: "40px" }}>
+          <Grid xs={12}>
+            <Button variant="contained" color="primary" onClick={submitOrders}>Submit</Button>
+          </Grid>
+        </Grid>
       </div>
     )
   }
 
   const submitOrders = () => {
-    console.log('deliveryExecutivesData: ', deliveryExecutives)
-    console.log('graphData: ', generateGraphData())
+    toggleGraph(false)
     const graph = generateGraphData();
-
-    for (let deliveryExecutive of deliveryExecutives) {
-      const pickupShortestPath = findShortestPath(graph, deliveryExecutive.startPosition, deliveryExecutive.pickupLocation)
-      const deliveryShortestPath = findShortestPath(graph, deliveryExecutive.pickupLocation, deliveryExecutive.dropLocation)
-      console.log("pickupShortestPath: ", pickupShortestPath)
-      console.log("deliveryShortestPath: ", deliveryShortestPath)
+    const distanceToReachForEachExecutive = []
+    for (let i = 0; i < deliveryExecutives.length; i++) {
+      const shortestPath = findShortestPath(graph, deliveryExecutives[i].startPosition, orderData.pickupLocation)
+      distanceToReachForEachExecutive.push(shortestPath.distance);
     }
+
+    const selectedIndex = distanceToReachForEachExecutive.indexOf(Math.min(...distanceToReachForEachExecutive));
+    const selectedDeliveryExecutive = deliveryExecutives[selectedIndex];
+
+    const pickupShortestPath = findShortestPath(graph, selectedDeliveryExecutive.startPosition, orderData.pickupLocation)
+    const deliveryShortestPath = findShortestPath(graph, orderData.pickupLocation, orderData.dropLocation)
+
+    setOrderGraphData({
+      deliveryExecutive: selectedDeliveryExecutive.name,
+      deliveryExecutiveStartingLocation: selectedDeliveryExecutive.startPosition,
+      pickup: {
+        links: getLinks(graph, pickupShortestPath.path),
+        nodes: generateNodes(pickupShortestPath.path),
+      },
+      drop: {
+        links: getLinks(graph, deliveryShortestPath.path),
+        nodes: generateNodes(deliveryShortestPath.path)
+      },
+    })
+    toggleGraph(true)
+
+    const executives = [...deliveryExecutives]
+    executives[selectedIndex].startPosition = orderData.dropLocation
+    updateDeliveryExecutives(executives)
   }
+
+  const getLinks = (graph, path) => {
+    const links = []
+    for (let i = 1; i < path.length; i++) {
+      let graphNode = graph[path[i - 1]];
+      let distance = graphNode[path[i]]
+      links.push({ source: path[i - 1], target: path[i], distance })
+    }
+    return links;
+  }
+
+  const generateNodes = (path) => path.map(item => ({ id: item }))
+
 
   const getDataTable = () => {
     return (
@@ -157,10 +219,9 @@ const Home = () => {
         <Table aria-label="simple table">
           <TableHead>
             <TableRow>
-              <TableCell align="center">Node1</TableCell>
-              <TableCell align="center">Node2</TableCell>
+              <TableCell align="center">Restaurants</TableCell>
+              <TableCell align="center">Houses</TableCell>
               <TableCell align="center">Distance</TableCell>
-              {/* <TableCell align="center">Add</TableCell> */}
             </TableRow>
           </TableHead>
           <TableBody>
@@ -181,59 +242,57 @@ const Home = () => {
     )
   }
 
-  const handleTransactionDataSubmit = () => {
-    const data = {
-      nodes: generateNodes(),
-    }
-    const config = {
-      freezeAllDragEvents: true,
-      nodeHighlightBehavior: true,
-      node: {
-        color: "lightgreen",
-        highlightStrokeColor: "blue",
-        fontSize: 12,
-      },
-      link: {
-        highlightColor: "lightblue",
-        renderLabel: true,
-        labelProperty: "amount",
-        fontSize: 12,
-      },
-      directed: true,
-      height: 600,
-      width: 600,
-    };
-  }
-
-  const generateNodes = () => restaurants.map(item => ({ id: item }))
-
   return (
     <div>
       <>
         <Grid container>
+          <Grid xs={12}>
+            <h3>Live Ordering System</h3>
+          </Grid>
+        </Grid>
+        <Grid container>
           <Grid item xs={12} md={6}>
-            <div>
-              <div>
-                <h4>Transactions</h4>
-                <div style={{ textAlign: "left" }}>
-                  <p>Enter transactions in the table below :-</p>
-                  <ol>
-                    <li>Enter the names of the Payer in first column</li>
-                    <li>Enter the names of the Payee in second column</li>
-                    <li>Enter the amount paid in the third column</li>
-                    <li>Click on Build Graph to build a graph from the given transactions</li>
-                    <li>Click on Simplify payments button when you are done with entering the payments.</li>
-                  </ol>
-                </div>
-              </div>
-            </div>
+
             <div className="form">
               {getDataTable()}
             </div>
           </Grid>
+          <Grid item xs={12} md={6}>
+            {finalForm()}
+          </Grid>
+
+          {showGraph ? (
+            <Grid item xs={12}>
+              <Grid container>
+                <Grid item xs={6} md={6}>
+                  <div>
+                    <div>
+                      {orderGraphData.deliveryExecutive} will go from {orderGraphData.deliveryExecutiveStartingLocation} to {orderData.pickupLocation} for Pickup
+                    </div>
+                    <Graph
+                      id="graph-id-pickup" // id is mandatory
+                      data={orderGraphData.pickup}
+                      config={graphConfig}
+                    />
+                  </div>
+                </Grid>
+                <Grid item xs={6} md={6}>
+                  <div>
+                    <div>
+                      {orderGraphData.deliveryExecutive} will go from {orderData.pickupLocation} to {orderData.dropLocation} for Delivery
+                    </div>
+                    <Graph
+                      id="graph-id-drop" // id is mandatory
+                      data={orderGraphData.drop}
+                      config={graphConfig}
+                    />
+                  </div>
+                </Grid>
+              </Grid>
+            </Grid>
+          ) : null}
         </Grid>
       </>
-      {finalForm()}
 
     </div >
   )
